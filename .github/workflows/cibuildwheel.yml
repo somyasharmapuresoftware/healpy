@@ -32,20 +32,30 @@ jobs:
     strategy:
       matrix:
         os: [ubuntu-latest, macos-latest]
+        arch: [auto]
+        include:
+          - os: ubuntu-latest
+            arch: aarch64
 
     steps:
       - uses: actions/checkout@v2
         with:
           submodules: true
+ 
+      - name: Set up QEMU
+        if:  ${{ matrix.arch == 'aarch64' }}
+        uses: docker/setup-qemu-action@v1
 
       - name: Build wheels
         uses: pypa/cibuildwheel@v1.12.0
         env:
+          CIBW_ARCHS_LINUX: ${{matrix.arch}}
           CIBW_BEFORE_ALL_LINUX: yum install -y openssl-devel
           CIBW_BEFORE_ALL_MACOS: brew install automake
           CIBW_ENVIRONMENT_MACOS: CC=gcc-9 CXX=g++-9
           CIBW_MANYLINUX_X86_64_IMAGE: quay.io/pypa/manylinux1_x86_64
           CIBW_MANYLINUX_I686_IMAGE: quay.io/pypa/manylinux1_i686
+          CIBW_MANYLINUX_AARCH64_IMAGE: quay.io/pypa/manylinux2014_aarch64
           CIBW_SKIP: pp*
           # Workaround for https://github.com/matthew-brett/delocate/pull/87.
           # Remove this when delocate>0.8.2 has been released.
